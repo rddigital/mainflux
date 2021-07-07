@@ -36,6 +36,9 @@ var (
 
 var channelPartRegExp = regexp.MustCompile(`^/channels/([\w\-]+)/messages(/[^?]*)?(\?.*)?$`)
 
+var urlMQTT = "mainflux-mqtt:1883"
+var timeOut = 30
+
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc adapter.Service, tracer opentracing.Tracer) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -60,7 +63,40 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer) http.Handler {
 	r.GetFunc("/version", mainflux.Version("http"))
 	r.Handle("/metrics", promhttp.Handler())
 
+	r.Post("/reqres", http.HandlerFunc(reqresHandler))
+
 	return r
+}
+
+func reqresHandler(rw http.ResponseWriter, req *http.Request) {
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(rw, "can't read body", http.StatusBadRequest)
+		return
+	}
+
+	thingId := req.Header.Get("id")
+	thingKey := req.Header.Get("key")
+	topicReq := req.Header.Get("topicrequest")
+	topicRes := req.Header.Get("topicresponse")
+
+	// response := thingId + "/" + thingKey + "/" + topicRes + "/" + topicReq + ":" + string(body)
+
+	client, err := NewClient(urlMQTT, thingId, thingKey, time.Duration(timeOut*int(time.Second)))
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	defer client.Disconnect(0)
+
+	response, err := Requester(client, topicRes, topicReq, time.Duration(timeOut*int(time.Second)), body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(response)
 }
 
 func parseSubtopic(subtopic string) (string, error) {

@@ -247,6 +247,7 @@ services:
     depends_on:
       - things
       - nats
+      - mqtt-adapter
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
