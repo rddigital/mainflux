@@ -27,13 +27,13 @@ func LoggingMiddleware(svc http.Service, logger log.Logger) http.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Publish(ctx context.Context, token string, msg messaging.Message) (err error) {
+func (lm *loggingMiddleware) PubSub(ctx context.Context, token string, msg messaging.Message, respTopic string) (res []byte, err error) {
 	defer func(begin time.Time) {
 		destChannel := msg.Channel
 		if msg.Subtopic != "" {
 			destChannel = fmt.Sprintf("%s.%s", destChannel, msg.Subtopic)
 		}
-		message := fmt.Sprintf("Method publish to channel %s took %s to complete", destChannel, time.Since(begin))
+		message := fmt.Sprintf("Method publish-subscribe to channel %s took %s to complete", destChannel, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -41,5 +41,5 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, token string, msg mess
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Publish(ctx, token, msg)
+	return lm.svc.PubSub(ctx, token, msg, respTopic)
 }
