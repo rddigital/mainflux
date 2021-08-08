@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/mainflux/mainflux"
 	adapter "github.com/mainflux/mainflux/http"
@@ -19,8 +20,8 @@ import (
 )
 
 func newMessageService(cc mainflux.ThingsServiceClient) adapter.Service {
-	pub := mocks.NewPublisher()
-	return adapter.New(pub, cc)
+	pub := mocks.NewPubSub()
+	return adapter.New(pub, cc, 10*time.Second)
 }
 
 func newMessageServer(svc adapter.Service) *httptest.Server {

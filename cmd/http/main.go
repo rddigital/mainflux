@@ -39,6 +39,7 @@ const (
 	defJaegerURL         = ""
 	defThingsAuthURL     = "localhost:8181"
 	defThingsAuthTimeout = "1s"
+	defResponseTimeout   = "30s"
 
 	envLogLevel          = "MF_HTTP_ADAPTER_LOG_LEVEL"
 	envClientTLS         = "MF_HTTP_ADAPTER_CLIENT_TLS"
@@ -48,6 +49,7 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envResponseTimeout   = "MF_RESPONSE_TIMEOUT"
 )
 
 type config struct {
@@ -59,6 +61,7 @@ type config struct {
 	jaegerURL         string
 	thingsAuthURL     string
 	thingsAuthTimeout time.Duration
+	responseTimeout   time.Duration
 }
 
 func main() {
@@ -78,15 +81,15 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	pub, err := nats.NewPublisher(cfg.natsURL)
+	pubsub, err := nats.NewPubSub(cfg.natsURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
 		os.Exit(1)
 	}
-	defer pub.Close()
+	defer pubsub.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
-	svc := adapter.New(pub, tc)
+	svc := adapter.New(pubsub, tc, cfg.responseTimeout)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
@@ -134,6 +137,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
 	}
 
+	responseTimeout, err := time.ParseDuration(mainflux.Env(envResponseTimeout, defResponseTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envResponseTimeout, err.Error())
+	}
+
 	return config{
 		natsURL:           mainflux.Env(envNatsURL, defNatsURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
@@ -143,6 +151,7 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsAuthURL:     mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		thingsAuthTimeout: authTimeout,
+		responseTimeout:   responseTimeout,
 	}
 }
 

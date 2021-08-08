@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/opentracing/opentracing-go/mocktracer"
 
@@ -21,8 +22,8 @@ import (
 )
 
 func newService(cc mainflux.ThingsServiceClient) adapter.Service {
-	pub := mocks.NewPublisher()
-	return adapter.New(pub, cc)
+	pub := mocks.NewPubSub()
+	return adapter.New(pub, cc, 10*time.Second)
 }
 
 func newHTTPServer(svc adapter.Service) *httptest.Server {

@@ -6,6 +6,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -28,6 +29,8 @@ import (
 )
 
 const protocol = "http"
+
+const responseSubTopicHeader = "ResponsesSubtopic"
 
 var (
 	errMalformedData     = errors.New("malformed request data")
@@ -108,6 +111,16 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 		token = pass
 	}
 
+	var responseTopic string
+	subResTopic := r.Header.Get(responseSubTopicHeader)
+	if subResTopic != "" {
+		subResTopic, err = parseSubtopic(subResTopic)
+		if err != nil {
+			return nil, err
+		}
+		responseTopic = fmt.Sprintf("channels.%s.%s", chanID, subResTopic)
+	}
+
 	payload, err := decodePayload(r.Body)
 	if err != nil {
 		return nil, err
@@ -122,8 +135,9 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	}
 
 	req := publishReq{
-		msg:   msg,
-		token: token,
+		msg:           msg,
+		token:         token,
+		responseTopic: responseTopic,
 	}
 
 	return req, nil
@@ -140,7 +154,8 @@ func decodePayload(body io.ReadCloser) ([]byte, error) {
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(response.([]byte))
 	return nil
 }
 

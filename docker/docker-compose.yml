@@ -269,22 +269,22 @@ services:
     volumes:
       - mainflux-es-redis-volume:/data
 
-  coap-adapter:
-    image: mainflux/coap:${MF_RELEASE_TAG}
-    container_name: mainflux-coap
-    depends_on:
-      - things
-      - nats
-    restart: on-failure
-    environment:
-      MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}
-      MF_COAP_ADAPTER_PORT: ${MF_COAP_ADAPTER_PORT}
-      MF_NATS_URL: ${MF_NATS_URL}
-      MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
-      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-    ports:
-      - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
-      - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
-    networks:
-      - mainflux-base-net
+  # coap-adapter:
+  #   image: mainflux/coap:${MF_RELEASE_TAG}
+  #   container_name: mainflux-coap
+  #   depends_on:
+  #     - things
+  #     - nats
+  #   restart: on-failure
+  #   environment:
+  #     MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}
+  #     MF_COAP_ADAPTER_PORT: ${MF_COAP_ADAPTER_PORT}
+  #     MF_NATS_URL: ${MF_NATS_URL}
+  #     MF_JAEGER_URL: ${MF_JAEGER_URL}
+  #     MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+  #     MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+  #   ports:
+  #     - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
+  #     - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
+  #   networks:
+  #     - mainflux-base-net

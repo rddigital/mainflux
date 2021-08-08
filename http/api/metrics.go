@@ -31,11 +31,11 @@ func MetricsMiddleware(svc http.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (mm *metricsMiddleware) Publish(ctx context.Context, token string, msg messaging.Message) error {
+func (mm *metricsMiddleware) PubSub(ctx context.Context, token string, msg messaging.Message, respTopic string) ([]byte, error) {
 	defer func(begin time.Time) {
-		mm.counter.With("method", "publish").Add(1)
-		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())
+		mm.counter.With("method", "publish-subscribe").Add(1)
+		mm.latency.With("method", "publish-subscribe").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Publish(ctx, token, msg)
+	return mm.svc.PubSub(ctx, token, msg, respTopic)
 }
